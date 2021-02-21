@@ -1,20 +1,25 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require("body-parser");
-const formData = require("express-form-data");
 
+const loggerMiddleware = require('./middleware/logger');
 const indexRouter = require('./routes/index');
 const libraryRouter = require('./routes/library');
+const errorMiddleware = require('./middleware/error');
 
 const app = express();
 
-// app.use(formData.parse());
 app.use(bodyParser.json());
 app.use(cors());
 
+app.use(loggerMiddleware);
+
 app.use('/public', express.static(__dirname+"/public"));
 
-app.use('/', indexRouter);
+app.use('/api/user', indexRouter);
 app.use('/api/books', libraryRouter);
 
-app.listen(3000);
+app.use(errorMiddleware);
+
+
+app.listen(process.env.PORT || 3000);

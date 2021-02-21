@@ -1,37 +1,11 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
-const bodyParser = require("body-parser");
 const router = express.Router();
 const fileMiddleware = require('../middleware/file');
-const uidGenerator = require('node-unique-id-generator')
+const Book = require('../models/Book');
 
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
-
-
-let library = [{
-  id: "np1",
-  title: "Колбок",
-  description: "Сказка",
-  authors: "Народ",
-  favorite: "Любимые",
-  fileCover: 'Картон',
-  fileName: "'колобок.pdf'"
-}];
-
-class Book {
-  constructor(title = 'none', description = 'none', authors = 'none', favorite = 'none', fileCover = 'none', fileName = 'none',  fileBook = 'none', id = uidGenerator.generateUniqueId()) {
-      this.id = id,
-      this.title = title,
-      this.description = description,
-      this.authors = authors,
-      this.favorite = favorite,
-      this.fileCover = fileCover,
-      this.fileName = fileName
-      this.fileBook = fileBook
-  }
-}
-
+let library = [];
 
 router.get('/', (req, res) => {
   const books = library;
@@ -49,30 +23,10 @@ router.get('/:id', (req, res) => {
   }
 })
 
-router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
-  const {title, description, authors, favorite, fileCover} = req.body;
-
-  if (req.file) {
-    const {filename, path} = req.file;
-    const newBook = new Book(title, description, authors, favorite, fileCover, filename, path);
-    library.push(newBook);
-    console.log(library)
-
-    res.status(201).json(newBook);
-  } else {
-    res.status(404).json();
-  }
-})
-
 router.get('/:id/download', (req, res) => {
   const {id} = req.params;
-  console.log(id)
-  console.log(library)
   const book = library.find(i => i.id === id);
-  console.log(book)
   const filePath = path.join(book.fileBook);
-
-  console.log(filePath)
 
   res.download(filePath, book.filename, err => {
     if (err) {
@@ -80,6 +34,21 @@ router.get('/:id/download', (req, res) => {
     }
   })
 })
+
+router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
+  const {title, description, authors, favorite, fileCover} = req.body;
+
+  if (req.file) {
+    const {filename, path} = req.file;
+    const newBook = new Book(title, description, authors, favorite, fileCover, filename, path);
+    library.push(newBook);
+    
+    res.status(201).json(newBook);
+  } else {
+    res.status(404).json();
+  }
+})
+
 
 router.put('/:id', fileMiddleware.single('book-pdf'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
