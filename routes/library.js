@@ -39,8 +39,8 @@ router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
 
   if (req.file) {
-    const {filename, path} = req.file;
-    const newBook = new Book(title, description, authors, favorite, fileCover, filename, path);
+    const {filename, path: pathFile} = req.file;
+    const newBook = new Book(title, description, authors, favorite, fileCover, filename, pathFile);
     library.push(newBook);
     
     res.status(201).json(newBook);
@@ -52,29 +52,27 @@ router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
 
 router.put('/:id', fileMiddleware.single('book-pdf'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
-  let fileName = '';
-  let fileBook = '';
-  if (req.file) {
-    fileName = req.file.filename;
-    fileBook = req.file.path;
-  }
- 
-  const {id} = req.params;
-  const idx = library.findIndex(el => el.id == id);
-  
-  const file = path.join(library[idx].fileBook);
-  try {
-    fs.unlinkSync(file)
-  } catch(err) {
-    console.error(err)
-  }
 
-  if (idx !== -1) {
-    library[idx] = {
-          ...library[idx], title, description, authors, favorite, fileCover, fileName, fileBook
+  if (req.file) {
+    const {filename, path: pathFile} = req.file;
+ 
+    const {id} = req.params;
+    const idx = library.findIndex(el => el.id == id);
+    
+    const file = path.join(library[idx].fileBook);
+    try {
+      fs.unlinkSync(file)
+    } catch(err) {
+      console.error(err)
+    }
+
+    if (idx !== -1) {
+      library[idx] = {
+        ...library[idx], title, description, authors, favorite, fileCover, fileName: filename, fileBook: pathFile
       };
-      res.json(library[idx]);
-  } else {
+        res.json(library[idx]);
+    }
+ } else {
       res.status(404).json("book | not found");
   }
 });
