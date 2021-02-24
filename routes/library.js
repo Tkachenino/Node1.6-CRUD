@@ -35,7 +35,7 @@ router.get('/:id/download', (req, res) => {
   })
 })
 
-router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
+router.post('/', fileMiddleware.single('fileBook'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
 
   if (req.file) {
@@ -50,7 +50,7 @@ router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
 })
 
 
-router.put('/:id', fileMiddleware.single('book-pdf'), (req, res) => {
+router.put('/:id', fileMiddleware.single('fileBook'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
 
   if (req.file) {
