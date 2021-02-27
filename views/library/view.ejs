@@ -1,0 +1,47 @@
+<%- include("../partials/layout-start", {title: title}) %>
+<%- include("../partials/menu") %>
+<h1><%= title %></h1>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Параметр </th>
+      <th scope="col">Значение</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Заголовок</td>
+      <td><%= book.title %></td>
+    </tr>
+    <tr>
+      <td>Описание</td>
+      <td><%= book.description %></td>
+    </tr>
+    <tr>
+      <td>Авторы</td>
+      <td><%= book.authors %></td>
+    </tr>
+    <tr>
+      <td>Жанр</td>
+      <td><%= book.favorite %></td>
+    </tr>
+    <tr>
+      <td>Обложка</td>
+      <td><%= book.fileCover %></td>
+    </tr>
+    <tr>
+      <td>Доступно для скачивания</td>
+      <td><%= book.fileName ? 'Да' : "Нет" %></td>
+    </tr>
+  </tbody>
+</table>
+<% if (!!book.fileName) { %>
+<form action="/books/download/<%= book.id %>" method="GET" class="d-inline">
+  <button class="btn btn-sm btn-primary">
+      <i class="fa fa-download" aria-hidden="true"></i>
+  </button>
+</form>
+<% } %>
+
+<%- include("../partials/layout-end") %>
