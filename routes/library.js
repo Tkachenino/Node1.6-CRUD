@@ -123,8 +123,8 @@ router.post('/books/create', fileMiddleware.single('fileBook'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
 
   if (req.file) {
-    const {filename, path} = req.file;
-    const newBook = new Book(title, description, authors, favorite, fileCover, filename, path);
+    const {filename, path: pathFile} = req.file;
+    const newBook = new Book(title, description, authors, favorite, fileCover, filename, pathFile);
     library.push(newBook);
     
     res.status(201).redirect('/books');
