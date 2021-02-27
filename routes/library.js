@@ -5,37 +5,121 @@ const router = express.Router();
 const fileMiddleware = require('../middleware/file');
 const Book = require('../models/Book');
 
-let library = [];
+let library = [
+  {
+  id: 'id',
+  title: "title",
+  description: "description",
+  authors: "authors",
+  favorite: "favorite",
+  fileCover: "",
+  fileName: "",
+  fileBook: ""
+},
+{
+  id: 'id2',
+  title: "title2",
+  description: "description2",
+  authors: "authors2",
+  favorite: "favorite2",
+  fileCover: "",
+  fileName: "",
+  fileBook: ""
+},
+];
 
 router.get('/', (req, res) => {
-  const books = library;
-  res.json(books);
+  res.render('index',
+  {
+    title: 'Твоя личная библиотека у тебя всегда под рукой'
+  })
 })
 
-router.get('/:id', (req, res) => {
+router.get('/404', (req, res) => {
+  res.render('error/404',
+  {
+    title: 'Склад ошибок',
+  })
+})
+
+router.get('/books', (req, res) => {
+  res.render('library/index',
+  {
+    title: 'Личная библиотека',
+    books: library
+  })
+})
+
+
+
+router.get('/books/create', (req, res) => {
+  res.render('library/create',
+  {
+    title: 'Личная библиотека',
+    book: {}
+  })
+})
+
+router.get('/books/update/:id', (req, res) => {
   const {id} = req.params;
   const book = library.find(el => el.id === id);
-
-  if (book) {
-    res.json(book);
-  } else {
-    res.status(404).json("book | not found");
-  }
+  res.render('library/update',
+  {
+    title: 'Личная библиотека',
+    book: book
+  })
 })
 
-router.get('/:id/download', (req, res) => {
+router.post('/books/update/:id', fileMiddleware.single('fileBook'), (req, res) => {
+  const {title, description, authors, favorite, fileCover} = req.body;
+  
+  if (req.file) {
+    const {filename, path: pathFile} = req.file;
+    const {id} = req.params;
+    const idx = library.findIndex(el => el.id == id);
+    
+    const file = path.join(library[idx].fileBook);
+    try {
+      fs.unlinkSync(file)
+    } catch(err) {
+      console.error(err)
+    }
+
+  if (idx !== -1) {
+    library[idx] = {
+          ...library[idx], title, description, authors, favorite, fileCover, fileName: filename, fileBook: pathFile
+      };
+      res.status(302).redirect('/books');
+    }
+ } else {
+      res.status(404).redirect('/404');
+  }
+});
+
+router.get('/books/view/:id', (req, res) => {
+  const {id} = req.params;
+  const book = library.find(el => el.id === id);
+  res.render('library/view',
+  {
+    title: 'Личная библиотека',
+    book: book
+  })
+})
+
+router.get('/books/download/:id', (req, res) => {
   const {id} = req.params;
   const book = library.find(i => i.id === id);
   const filePath = path.join(book.fileBook);
 
-  res.download(filePath, book.filename, err => {
+
+  res.download(filePath, book.fileName, err => {
     if (err) {
-      res.status.apply(404).json();
+      res.status.apply(404).redirect('/404');
     }
   })
 })
 
-router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
+router.post('/books/create', fileMiddleware.single('fileBook'), (req, res) => {
   const {title, description, authors, favorite, fileCover} = req.body;
 
   if (req.file) {
@@ -43,43 +127,13 @@ router.post('/', fileMiddleware.single('book-pdf'), (req, res) => {
     const newBook = new Book(title, description, authors, favorite, fileCover, filename, path);
     library.push(newBook);
     
-    res.status(201).json(newBook);
+    res.status(201).redirect('/books');
   } else {
-    res.status(404).json();
+    res.status(404).redirect('/404');
   }
 })
 
-
-router.put('/:id', fileMiddleware.single('book-pdf'), (req, res) => {
-  const {title, description, authors, favorite, fileCover} = req.body;
-  let fileName = '';
-  let fileBook = '';
-  if (req.file) {
-    fileName = req.file.filename;
-    fileBook = req.file.path;
-  }
- 
-  const {id} = req.params;
-  const idx = library.findIndex(el => el.id == id);
-  
-  const file = path.join(library[idx].fileBook);
-  try {
-    fs.unlinkSync(file)
-  } catch(err) {
-    console.error(err)
-  }
-
-  if (idx !== -1) {
-    library[idx] = {
-          ...library[idx], title, description, authors, favorite, fileCover, fileName, fileBook
-      };
-      res.json(library[idx]);
-  } else {
-      res.status(404).json("book | not found");
-  }
-});
-
-router.delete('/:id', (req, res) => {
+router.post('/books/delete/:id', (req, res) => {
   const {id} = req.params;
   const idx = library.findIndex(el => el.id === id);
 
@@ -94,10 +148,9 @@ router.delete('/:id', (req, res) => {
     }
 
     library = library.filter(el => el.id !== id);
-      res.json('ok');
+    res.status(201).redirect('/books');
   } else {
-      res.status(404);
-      res.json("book | not found");
+      res.status(404).redirect('/404');
   }
 });
 
