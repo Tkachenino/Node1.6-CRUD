@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  counter:
+    build: ./counter/
+    environment: PORT=3000
+    expose:
+      - "3000"
+    volumes:
+      - ./counter/db.json:/counter/db.json
+  test:
+    build: ./webSite/
+    environment: PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - counter
