@@ -3,6 +3,7 @@ const fs = require('fs');
 const express = require('express');
 const router = express.Router();
 const fileMiddleware = require('../middleware/file');
+const {upCounter, getCount} = require('../middleware/counter');
 const Book = require('../models/Book');
 
 let library = [
@@ -96,13 +97,17 @@ router.post('/books/update/:id', fileMiddleware.single('fileBook'), (req, res) =
   }
 });
 
-router.get('/books/view/:id', (req, res) => {
+router.get('/books/view/:id', async(req, res) => {
   const {id} = req.params;
+  await upCounter(id);
+  const count = await getCount(id);
+  
   const book = library.find(el => el.id === id);
   res.render('library/view',
   {
     title: 'Личная библиотека',
-    book: book
+    book: book,
+    count: count
   })
 })
 
