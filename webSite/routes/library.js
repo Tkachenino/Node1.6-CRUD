@@ -4,30 +4,8 @@ const express = require('express');
 const router = express.Router();
 const fileMiddleware = require('../middleware/file');
 const {upCounter, getCount} = require('../middleware/counter');
+const { getFileData } = require("../utils");
 const Book = require('../models/Book');
-
-let library = [
-  {
-  id: 'id',
-  title: "title",
-  description: "description",
-  authors: "authors",
-  favorite: "favorite",
-  fileCover: "",
-  fileName: "",
-  fileBook: ""
-},
-{
-  id: 'id2',
-  title: "title2",
-  description: "description2",
-  authors: "authors2",
-  favorite: "favorite2",
-  fileCover: "",
-  fileName: "",
-  fileBook: ""
-},
-];
 
 router.get('/', (req, res) => {
   res.render('index',
@@ -43,15 +21,14 @@ router.get('/404', (req, res) => {
   })
 })
 
-router.get('/books', (req, res) => {
+router.get('/books', async(req, res) => {
+  const books = await Book.find();
   res.render('library/index',
   {
     title: 'Личная библиотека',
-    books: library
+    books: books
   })
 })
-
-
 
 router.get('/books/create', (req, res) => {
   res.render('library/create',
@@ -61,9 +38,9 @@ router.get('/books/create', (req, res) => {
   })
 })
 
-router.get('/books/update/:id', (req, res) => {
+router.get('/books/update/:id', async(req, res) => {
   const {id} = req.params;
-  const book = library.find(el => el.id === id);
+  const book = await Book.findById(id);
   res.render('library/update',
   {
     title: 'Личная библиотека',
@@ -71,38 +48,35 @@ router.get('/books/update/:id', (req, res) => {
   })
 })
 
-router.post('/books/update/:id', fileMiddleware.single('fileBook'), (req, res) => {
-  const {title, description, authors, favorite, fileCover} = req.body;
-  
-  if (req.file) {
-    const {filename, path: pathFile} = req.file;
+router.post('/books/update/:id', fileMiddleware.single('fileBook'), async(req, res) => {
+  try {
     const {id} = req.params;
-    const idx = library.findIndex(el => el.id == id);
-    
-    const file = path.join(library[idx].fileBook);
-    try {
-      fs.unlinkSync(file)
-    } catch(err) {
-      console.error(err)
-    }
+    const {title, description, authors, fileCover} = req.body;
+    const {filename, path: pathFile} = req.file;
 
-  if (idx !== -1) {
-    library[idx] = {
-          ...library[idx], title, description, authors, favorite, fileCover, fileName: filename, fileBook: pathFile
-      };
-      res.status(302).redirect('/books');
-    }
- } else {
-      res.status(404).redirect('/404');
+    const newBook = new Book({
+      title: title,
+      description: description,
+      authors: authors,
+      favorite: false,
+      fileCover: fileCover,
+      fileName: filename,
+      fileBook: pathFile
+    });
+
+    await Todo.findByIdAndUpdate(id, newBook);
+    res.status(201).redirect('/books');
+  } catch (e) {
+    console.log(e);
+    res.status(404).redirect('/404');
   }
 });
 
 router.get('/books/view/:id', async(req, res) => {
   const {id} = req.params;
+  const book = await Book.findById(id);
   await upCounter(id);
   const count = await getCount(id);
-  
-  const book = library.find(el => el.id === id);
   res.render('library/view',
   {
     title: 'Личная библиотека',
@@ -111,51 +85,59 @@ router.get('/books/view/:id', async(req, res) => {
   })
 })
 
-router.get('/books/download/:id', (req, res) => {
+router.get('/books/download/:id', async(req, res) => {
   const {id} = req.params;
-  const book = library.find(i => i.id === id);
-  const filePath = path.join(book.fileBook);
+  const book = await Book.findById(id);
+  
 
+  try {
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="filename.pdf"'
+    });
 
-  res.download(filePath, book.fileName, err => {
-    if (err) {
-      res.status.apply(404).redirect('/404');
-    }
-  })
+    res.end(`data:'application/pdf;base64,${book.fileBook.data}`);
+  } catch(e) {
+    console.log(e);
+    res.status.apply(404).redirect('/404');
+
+  }
 })
 
-router.post('/books/create', fileMiddleware.single('fileBook'), (req, res) => {
-  const {title, description, authors, favorite, fileCover} = req.body;
+router.post('/books/create', fileMiddleware.single('fileBook'), async(req, res) => {
+  try {
+    const {title, description, authors, fileCover} = req.body;
+    const fileBook = getFileData(req.file);
+    const {filename} = req.file;
 
-  if (req.file) {
-    const {filename, path: pathFile} = req.file;
-    const newBook = new Book(title, description, authors, favorite, fileCover, filename, pathFile);
-    library.push(newBook);
-    
+
+    const newBook = new Book({
+      title: title,
+      description: description,
+      authors: authors,
+      favorite: false,
+      fileCover: fileCover,
+      fileName: filename,
+      fileBook: fileBook
+    });
+
+    await newBook.save();
     res.status(201).redirect('/books');
-  } else {
+
+  } catch (e) {
+    console.log(e);
     res.status(404).redirect('/404');
   }
 })
 
-router.post('/books/delete/:id', (req, res) => {
-  const {id} = req.params;
-  const idx = library.findIndex(el => el.id === id);
-
-  if (idx !== -1) {
-    const file = path.join(library[idx].fileBook);
-
-    try {
-      fs.unlinkSync(file)
-      //file removed
-    } catch(err) {
-      console.error(err)
-    }
-
-    library = library.filter(el => el.id !== id);
+router.post('/books/delete/:id', async(req, res) => {
+  try {
+    const {id} = req.params;
+    const filter = { _id: id };
+    await Book.deleteOne(filter);
     res.status(201).redirect('/books');
-  } else {
-      res.status(404).redirect('/404');
+  } catch (e) {
+    res.status(404).redirect('/404');
   }
 });
 

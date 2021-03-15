@@ -1,3 +1,4 @@
 counter/node_modules
 webSite/node_modules
 webSite/.env
+.env
