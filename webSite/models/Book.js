@@ -1,16 +1,60 @@
-const uidGenerator = require('node-unique-id-generator')
+const {Schema, model} = require('mongoose');
 
-class Book {
-  constructor(title = '', description = '', authors = '', favorite = '', fileCover = '', fileName = '',  fileBook = '', id = uidGenerator.generateUniqueId()) {
-      this.id = id,
-      this.title = title,
-      this.description = description,
-      this.authors = authors,
-      this.favorite = favorite,
-      this.fileCover = fileCover,
-      this.fileName = fileName
-      this.fileBook = fileBook
-  }
-};
+const bookSchema = new Schema({
+    title: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        default: "",
+    },
+    authors: {
+        type: String,
+        default: "",
+    },
+    favorite: {
+        type: Boolean,
+        default: false,
+    },
+    fileCover: {
+        data: Buffer,
+        contentType: String
+    },
+    fileName: {
+        type: String,
+    },
+    fileBook: {
+        type: Object,
+    },
+});
 
-module.exports = Book;
+module.exports = model('Book', bookSchema);
+
+// const {Schema, model} = require('mongoose');
+
+// const bookSchema = new Schema({
+//   title: {
+//     type: String
+//   },
+//   description: {
+//     type: String
+//   },
+//   authors: {
+//     type: String
+//   },
+//   favorite: {
+//     type: Boolean
+//   },
+//   fileCover: {
+//     type: String
+//   },
+//   fileName: {
+//     type: String
+//   },
+//   fileBook: {
+//     type: String
+//   }
+// });
+
+// module.exports = model('Book', bookSchema);

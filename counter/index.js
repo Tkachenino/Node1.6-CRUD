@@ -38,7 +38,6 @@ app.post('/counter/:bookId/incr', (req, res) => {
       if (error) throw new Error(error);
     })
   }
-    console.log(counter);
   
   
 
