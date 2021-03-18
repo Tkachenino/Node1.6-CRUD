@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const fileMiddleware = require('../middleware/file');
 const {upCounter, getCount} = require('../middleware/counter');
-const { getFileData } = require("../utils");
 const Book = require('../models/Book');
 
 router.get('/', (req, res) => {
@@ -65,7 +64,7 @@ router.post('/books/update/:id', fileMiddleware.single('fileBook'), async(req, r
     });
 
     await Todo.findByIdAndUpdate(id, newBook);
-    res.status(201).redirect('/books');
+    res.redirect('/books');
   } catch (e) {
     console.log(e);
     res.status(404).redirect('/404');
@@ -88,29 +87,22 @@ router.get('/books/view/:id', async(req, res) => {
 router.get('/books/download/:id', async(req, res) => {
   const {id} = req.params;
   const book = await Book.findById(id);
+
+  const filePath = path.join(book.fileBook);
   
 
-  try {
-    res.writeHead(200, {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="filename.pdf"'
-    });
-
-    res.end(`data:'application/pdf;base64,${book.fileBook.data}`);
-  } catch(e) {
-    console.log(e);
-    res.status.apply(404).redirect('/404');
-
-  }
+  res.download(filePath, book.fileName, err => {
+    if (err) {
+      res.status.apply(404).redirect('/404');
+    }
+  })
 })
 
 router.post('/books/create', fileMiddleware.single('fileBook'), async(req, res) => {
   try {
     const {title, description, authors, fileCover} = req.body;
-    const fileBook = getFileData(req.file);
-    const {filename} = req.file;
-
-
+    const {filename, path: pathFile} = req.file;
+  
     const newBook = new Book({
       title: title,
       description: description,
@@ -118,11 +110,11 @@ router.post('/books/create', fileMiddleware.single('fileBook'), async(req, res) 
       favorite: false,
       fileCover: fileCover,
       fileName: filename,
-      fileBook: fileBook
+      fileBook: pathFile
     });
 
     await newBook.save();
-    res.status(201).redirect('/books');
+    res.redirect('/books');
 
   } catch (e) {
     console.log(e);
@@ -133,9 +125,15 @@ router.post('/books/create', fileMiddleware.single('fileBook'), async(req, res) 
 router.post('/books/delete/:id', async(req, res) => {
   try {
     const {id} = req.params;
+    const book = await Book.findById(id);
+    const file = path.join(book.fileBook);
+ 
+    //file removed
+    fs.unlinkSync(file);
+   
     const filter = { _id: id };
     await Book.deleteOne(filter);
-    res.status(201).redirect('/books');
+    res.redirect('/books');
   } catch (e) {
     res.status(404).redirect('/404');
   }
