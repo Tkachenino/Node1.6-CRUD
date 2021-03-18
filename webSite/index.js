@@ -26,8 +26,7 @@ app.use('/api/books', libraryApiRouter);
 app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 3000;
-const DB_HOST = process.env.HOST_DB;
-
+const DB_HOST = process.env.DB_HOST;
 
 const start = async() => {
     try {
